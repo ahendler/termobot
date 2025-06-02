@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,9 +13,24 @@ import { portugueseWords } from "@/lib/words"
 type LetterStatus = "correct" | "existSomewhereElse" | "absent" | "trueAbsent"
 
 export default function TermoBot() {
+  // Create a mapping of normalized words to original words with accents
+  const wordMapping = useMemo(() => {
+    const mapping: Record<string, string> = {};
+    portugueseWords.forEach(word => {
+      const normalized = word.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      mapping[normalized] = word;
+    });
+    return mapping;
+  }, []);
+
+  // Create a list of normalized words for processing
+  const normalizedWords = useMemo(() => {
+    return Object.keys(wordMapping);
+  }, [wordMapping]);
+
   const [currentGuess, setCurrentGuess] = useState<string>("")
   const [guesses, setGuesses] = useState<Array<{ word: string; statuses: LetterStatus[] }>>([])
-  const [possibleSolutions, setPossibleSolutions] = useState<string[]>(portugueseWords)
+  const [possibleSolutions, setPossibleSolutions] = useState<string[]>(normalizedWords)
   const [selectedStatuses, setSelectedStatuses] = useState<LetterStatus[]>(Array(5).fill("absent"))
 
   const handleGuessChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,7 +91,7 @@ export default function TermoBot() {
     const updatedGuesses = guesses.filter((_, i) => i !== index)
     setGuesses(updatedGuesses)
 
-    let filtered = [...portugueseWords]
+    let filtered = [...normalizedWords]
     for (const guess of updatedGuesses) {
       filtered = filterByGuess(filtered, guess)
     }
@@ -167,18 +182,26 @@ export default function TermoBot() {
               {currentGuess.length === 5 && (
                 <div className="space-y-2">
                   <Label>Clique em cada letra para alterar seu status</Label>
-                    <div className="flex justify-center gap-2">
-                    {currentGuess.split("").map((letter, index) => (
-                      <Button
-                      key={index}
-                      type="button" 
-                      className={`w-12 h-12 text-xl font-bold uppercase ${getLetterColor(selectedStatuses[index])} hover:${getLetterColor(selectedStatuses[index])}`}
-                      onClick={() => toggleLetterStatus(index)}
-                      >
-                      {letter}
-                      </Button>
-                    ))}
-                    </div>
+                  <div className="flex justify-center gap-2">
+                    {currentGuess.split("").map((letter, index) => {
+                      // Try to find accented version of the guess
+                      const normalizedGuess = currentGuess.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                      const accentedWord = wordMapping[normalizedGuess];
+                      // Use accented letter if available, otherwise use the original
+                      const displayLetter = accentedWord && index < accentedWord.length ? accentedWord[index] : letter;
+                      
+                      return (
+                        <Button
+                          key={index}
+                          type="button" 
+                          className={`w-12 h-12 text-xl font-bold uppercase ${getLetterColor(selectedStatuses[index])} hover:${getLetterColor(selectedStatuses[index])}`}
+                          onClick={() => toggleLetterStatus(index)}
+                        >
+                          {displayLetter}
+                        </Button>
+                      );
+                    })}
+                  </div>
                   <div className="flex justify-center gap-4 mt-4 text-sm">
                     <div className="flex items-center gap-1">
                       <div className="w-4 h-4 bg-green-500 rounded-full"></div>
@@ -213,14 +236,20 @@ export default function TermoBot() {
                 {guesses.map((guess, guessIndex) => (
                   <div key={guessIndex} className="flex items-center gap-2">
                     <div className="flex gap-1">
-                      {guess.word.split("").map((letter, letterIndex) => (
-                        <div
-                          key={letterIndex}
-                          className={`w-10 h-10 flex items-center justify-center text-lg font-bold uppercase ${getLetterColor(guess.statuses[letterIndex])}`}
-                        >
-                          {letter}
-                        </div>
-                      ))}
+                      {guess.word.split("").map((letter, letterIndex) => {
+                        // Find the accented version of the letter if it exists
+                        const currentWord = wordMapping[guess.word] || guess.word;
+                        const displayLetter = currentWord[letterIndex] || letter;
+                        
+                        return (
+                          <div
+                            key={letterIndex}
+                            className={`w-10 h-10 flex items-center justify-center text-lg font-bold uppercase ${getLetterColor(guess.statuses[letterIndex])}`}
+                          >
+                            {displayLetter}
+                          </div>
+                        );
+                      })}
                     </div>
                     <Button variant="ghost" size="sm" onClick={() => removeGuess(guessIndex)} className="ml-2">
                       Remover
@@ -247,9 +276,9 @@ export default function TermoBot() {
             <CardContent>
               <div className="max-h-60 overflow-y-auto">
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                  {possibleSolutions.slice(0, 100).map((word, index) => (
+                  {possibleSolutions.slice(0, 100).map((normalizedWord, index) => (
                     <div key={index} className="bg-gray-100 dark:bg-gray-700 p-2 text-center rounded uppercase text-black dark:text-white">
-                      {word}
+                      {wordMapping[normalizedWord] || normalizedWord}
                     </div>
                   ))}
                   {possibleSolutions.length > 100 && (
