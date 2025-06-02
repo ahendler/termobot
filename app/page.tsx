@@ -7,40 +7,108 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { portugueseWords } from "@/lib/words"
+import { answers, remaining } from "@/lib/words"
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from "@/components/ui/popover"
+import { Switch } from "@/components/ui/switch"
 
 
 type LetterStatus = "correct" | "existSomewhereElse" | "absent" | "trueAbsent"
 
 export default function TermoBot() {
-  // Create a mapping of normalized words to original words with accents
+  const allWords = useMemo(() => [...answers, ...remaining], []);
+  const [useAllWords, setUseAllWords] = useState<boolean>(false);
+  
   const wordMapping = useMemo(() => {
     const mapping: Record<string, string> = {};
-    portugueseWords.forEach(word => {
+    const wordList = useAllWords ? allWords : answers;
+    wordList.forEach(word => {
       const normalized = word.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
       mapping[normalized] = word;
     });
     return mapping;
-  }, []);
+  }, [useAllWords, allWords]);
 
-  // Create a list of normalized words for processing
   const normalizedWords = useMemo(() => {
     return Object.keys(wordMapping);
   }, [wordMapping]);
-
+  
   const [currentGuess, setCurrentGuess] = useState<string>("")
   const [guesses, setGuesses] = useState<Array<{ word: string; statuses: LetterStatus[] }>>([])
   const [possibleSolutions, setPossibleSolutions] = useState<string[]>(normalizedWords)
   const [selectedStatuses, setSelectedStatuses] = useState<LetterStatus[]>(Array(5).fill("absent"))
 
-  // Utility function to pre-fill statuses based on previous guesses
+  const filterByGuess = (wordList: string[], guess: { word: string; statuses: LetterStatus[] }) => {
+    return wordList.filter((word) => {
+      // Performs simple checks
+      for (let i = 0; i < 5; i++) {
+        const status = guess.statuses[i];
+        const guessLetter = guess.word[i];
+        const wordHasGuessLetter = word.includes(guessLetter);
+        
+        if (status === "absent" && word[i] === guessLetter) {
+          return false;
+        }
+        if (status === "correct" && word[i] !== guessLetter) {
+          return false;
+        }
+        if (status === "existSomewhereElse" && (word[i] === guessLetter || !wordHasGuessLetter)) {
+          return false;
+        }
+        if (status === "trueAbsent" && wordHasGuessLetter) {
+          return false;
+        }
+      }
+      // Check for excessive letters
+      const guessPresentCounts: Record<string, number> = {}
+      const wordPresentCounts: Record<string, number> = {}
+      for (let i = 0; i < 5; i++) {
+        const letter = guess.word[i];
+        if (guess.statuses[i] === "existSomewhereElse" || guess.statuses[i] === "correct") {
+          guessPresentCounts[letter] = (guessPresentCounts[letter] || 0) + 1;
+        }
+        if (word.includes(letter)) {
+          wordPresentCounts[letter] = (wordPresentCounts[letter] || 0) + 1;
+        }
+      }
+      for (const letter in guessPresentCounts) {
+        if ((wordPresentCounts[letter] || 0) < guessPresentCounts[letter]) {
+          return false;
+        }
+      }
+
+      return true
+    });
+  }
+
+  // Update possible solutions when word list changes
+  useMemo(() => {
+    if (guesses.length === 0) {
+      setPossibleSolutions(normalizedWords);
+    } else {
+      let filtered = [...normalizedWords];
+      for (const guess of guesses) {
+        filtered = filterByGuess(filtered, guess);
+      }
+      setPossibleSolutions(filtered);
+    }
+  }, [normalizedWords, guesses]);  // Added guesses as a dependency
+  
+  // Toggle between using all words and just answers
+  const toggleWordList = () => {
+    setUseAllWords(!useAllWords);
+  };
+
+
   const getPrefilledStatuses = (normalizedGuess: string) => {
     const newSelectedStatuses = Array(5).fill("absent");
     
     for (let i = 0; i < 5; i++) {
       const currentLetter = normalizedGuess[i];
       
-      // Check if this letter at this position was marked as "correct" in any previous guess
       const correctAtSamePosition = guesses.some(guess => 
         guess.word[i] === currentLetter && guess.statuses[i] === "correct"
       );
@@ -49,8 +117,7 @@ export default function TermoBot() {
         newSelectedStatuses[i] = "correct";
         continue;
       }
-      
-      // Check if this letter was marked as "existSomewhereElse" in any previous guess
+
       const existsSomewhereElse = guesses.some(guess =>
         guess.word[i] === currentLetter && guess.statuses[i] === "existSomewhereElse"
       );
@@ -131,50 +198,6 @@ export default function TermoBot() {
       filtered = filterByGuess(filtered, guess)
     }
     setPossibleSolutions(filtered)
-  }
-
-  const filterByGuess = (wordList: string[], guess: { word: string; statuses: LetterStatus[] }) => {
-
-    return wordList.filter((word) => {
-      // Performs simple checks
-      for (let i = 0; i < 5; i++) {
-        const status = guess.statuses[i];
-        const guessLetter = guess.word[i];
-        const wordHasGuessLetter = word.includes(guessLetter);
-        
-        if (status === "absent" && word[i] === guessLetter) {
-          return false;
-        }
-        if (status === "correct" && word[i] !== guessLetter) {
-          return false;
-        }
-        if (status === "existSomewhereElse" && (word[i] === guessLetter || !wordHasGuessLetter)) {
-          return false;
-        }
-        if (status === "trueAbsent" && wordHasGuessLetter) {
-          return false;
-        }
-      }
-      // Check for excessive letters
-      const guessPresentCounts: Record<string, number> = {}
-      const wordPresentCounts: Record<string, number> = {}
-      for (let i = 0; i < 5; i++) {
-        const letter = guess.word[i];
-        if (guess.statuses[i] === "existSomewhereElse" || guess.statuses[i] === "correct") {
-          guessPresentCounts[letter] = (guessPresentCounts[letter] || 0) + 1;
-        }
-        if (word.includes(letter)) {
-          wordPresentCounts[letter] = (wordPresentCounts[letter] || 0) + 1;
-        }
-      }
-      for (const letter in guessPresentCounts) {
-        if ((wordPresentCounts[letter] || 0) < guessPresentCounts[letter]) {
-          return false;
-        }
-      }
-
-      return true
-    });
   }
 
   const getLetterColor = (status: LetterStatus) => {
@@ -308,7 +331,42 @@ export default function TermoBot() {
         {guesses.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Soluções Possíveis ({possibleSolutions.length})</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                Soluções Possíveis ({possibleSolutions.length})
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button 
+                      className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                      type="button"
+                      aria-label="Informações sobre soluções possíveis"
+                    >
+                      ?
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="max-w-xs p-3">
+                    <div className="space-y-4">
+                      <p>O jogo term.ooo não considera todas as palavras de cinco letras do português como soluções possíveis. O conjunto de palavras aceitas é maior do que o conjunto de palavras que podem ser soluções.</p>
+                      
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="word-mode" className="text-sm">
+                          {useAllWords ? "Usando todas as palavras" : "Usando apenas possíveis respostas"}
+                        </Label>
+                        <Switch 
+                          id="word-mode" 
+                          checked={useAllWords} 
+                          onCheckedChange={toggleWordList} 
+                        />
+                      </div>
+                      
+                      <p className="text-xs text-gray-500">
+                        {useAllWords 
+                          ? "Incluindo palavras que são aceitas como palpites, mas não podem ser a solução." 
+                          : "Mostrando apenas palavras que podem ser a solução do dia."}
+                      </p>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </CardTitle>
               <CardDescription>
                 {possibleSolutions.length === 0
                   ? "Nenhuma solução encontrada. Tente remover ou ajustar seus palpites."
