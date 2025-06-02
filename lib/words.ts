@@ -1,5 +1,3 @@
-// This is a simplified list of Portuguese words
-// In a real application, you would want a more comprehensive list
 export const portugueseWords = [
   "ababa",
   "ababé",

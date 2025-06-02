@@ -7,8 +7,8 @@ import { ThemeProvider } from "@/components/theme-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "TermoBot - Ajudante para Termo",
-  description: "Uma ferramenta para ajudar a resolver o jogo Termo (Wordle brasileiro)"
+  title: "TERMOBOT",
+  description: "termobot"
 }
 
 export default function RootLayout({
