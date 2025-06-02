@@ -2,53 +2,50 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { portugueseWords } from "@/lib/words"
 
-// Tipos de status das letras
-type LetterStatus = "correct" | "present" | "absent" | "unknown"
+
+type LetterStatus = "correct" | "existSomewhereElse" | "absent" | "trueAbsent"
 
 export default function TermoBot() {
-  // Estado para o palpite atual
+  // Create a mapping of normalized words to original words with accents
+  const wordMapping = useMemo(() => {
+    const mapping: Record<string, string> = {};
+    portugueseWords.forEach(word => {
+      const normalized = word.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      mapping[normalized] = word;
+    });
+    return mapping;
+  }, []);
+
+  // Create a list of normalized words for processing
+  const normalizedWords = useMemo(() => {
+    return Object.keys(wordMapping);
+  }, [wordMapping]);
+
   const [currentGuess, setCurrentGuess] = useState<string>("")
-
-  // Estado para todos os palpites e seus status
   const [guesses, setGuesses] = useState<Array<{ word: string; statuses: LetterStatus[] }>>([])
+  const [possibleSolutions, setPossibleSolutions] = useState<string[]>(normalizedWords)
+  const [selectedStatuses, setSelectedStatuses] = useState<LetterStatus[]>(Array(5).fill("absent"))
 
-  // Estado para soluções possíveis
-  const [possibleSolutions, setPossibleSolutions] = useState<string[]>([])
-
-  // Estado para o status selecionado da letra ao adicionar um palpite
-  const [selectedStatuses, setSelectedStatuses] = useState<LetterStatus[]>(Array(5).fill("unknown"))
-
-  // Inicializa soluções possíveis com todas as palavras portuguesas de 5 letras
-  useEffect(() => {
-    // Filtra palavras para incluir apenas palavras de 5 letras
-    const fiveLetterWords = portugueseWords.filter((word) => word.length === 5)
-    setPossibleSolutions(fiveLetterWords)
-  }, [])
-
-  // Lidar com a mudança de entrada para o palpite atual
   const handleGuessChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toLowerCase()
-    // Permite apenas letras e limita a 5 caracteres
     if (/^[a-záàâãéèêíïóôõöúçñ]*$/i.test(value) && value.length <= 5) {
       setCurrentGuess(value)
 
-      // Redefine os status selecionados quando a palavra muda
       if (value.length !== currentGuess.length) {
-        setSelectedStatuses(Array(5).fill("unknown"))
+        setSelectedStatuses(Array(5).fill("absent"))
       }
     }
   }
 
-  // Alterna o status de uma letra
   const toggleLetterStatus = (index: number) => {
-    const statuses: LetterStatus[] = ["unknown", "correct", "present", "absent"]
+    const statuses: LetterStatus[] = ["absent", "correct", "existSomewhereElse"]
     const currentStatus = selectedStatuses[index]
     const currentIndex = statuses.indexOf(currentStatus)
     const nextIndex = (currentIndex + 1) % statuses.length
@@ -58,97 +55,103 @@ export default function TermoBot() {
     setSelectedStatuses(newSelectedStatuses)
   }
 
-  // Adiciona o palpite atual à lista de palpites
   const addGuess = () => {
     if (currentGuess.length !== 5) return
-
-    const newGuess = {
-      word: currentGuess,
-      statuses: [...selectedStatuses],
+    const normalizedGuess = currentGuess.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    // Replace the status of a letter to trueAbsent if all occurrences of that letter on the word are marked as absent
+    const selectedStatusesSpread = [...selectedStatuses]
+    // Check for trueAbsent status
+    for (let i = 0; i < 5; i++) {
+      const letter = normalizedGuess[i]
+      const letterCount = normalizedGuess.split(letter).length - 1
+      const absentCount = selectedStatusesSpread.filter((status, index) => status === "absent" && normalizedGuess[index] === letter).length
+      if (absentCount === letterCount) {
+        selectedStatusesSpread[i] = "trueAbsent"
+      } else if (selectedStatusesSpread[i] === "trueAbsent") {
+        selectedStatusesSpread[i] = "absent" // Reset to absent if not all occurrences are marked
+      }
     }
 
+
+    const newGuess = {
+      word: normalizedGuess,
+      statuses: selectedStatusesSpread as LetterStatus[]
+    }
     const updatedGuesses = [...guesses, newGuess]
     setGuesses(updatedGuesses)
-
-    // Filtra soluções possíveis com base em todos os palpites
-    const filtered = filterPossibleSolutions(updatedGuesses)
+    
+    const filtered = filterByGuess(possibleSolutions, newGuess)
     setPossibleSolutions(filtered)
 
-    // Redefine para o próximo palpite
     setCurrentGuess("")
-    setSelectedStatuses(Array(5).fill("unknown"))
+    setSelectedStatuses(Array(5).fill("absent"))
   }
 
-  // Remove um palpite
   const removeGuess = (index: number) => {
     const updatedGuesses = guesses.filter((_, i) => i !== index)
     setGuesses(updatedGuesses)
 
-    // Recalcula soluções possíveis
-    const filtered = filterPossibleSolutions(updatedGuesses)
+    let filtered = [...normalizedWords]
+    for (const guess of updatedGuesses) {
+      filtered = filterByGuess(filtered, guess)
+    }
     setPossibleSolutions(filtered)
   }
 
-  // Filtra soluções possíveis com base em todos os palpites
-  const filterPossibleSolutions = (allGuesses: Array<{ word: string; statuses: LetterStatus[] }>) => {
-    return portugueseWords.filter((word) => {
-      // Considere apenas palavras de 5 letras
-      if (word.length !== 5) return false
+  const filterByGuess = (wordList: string[], guess: { word: string; statuses: LetterStatus[] }) => {
 
-      // Verifica se a palavra corresponde a todas as restrições dos palpites
-      return allGuesses.every((guess) => {
-        // Para cada posição no palpite
-        for (let i = 0; i < 5; i++) {
-          const guessLetter = guess.word[i]
-          const guessStatus = guess.statuses[i]
-
-          // Se a letra estiver correta, a solução deve ter a mesma letra nesta posição
-          if (guessStatus === "correct" && word[i] !== guessLetter) {
-            return false
-          }
-
-          // Se a letra estiver presente mas na posição errada, a solução deve conter esta letra
-          // mas não nesta posição
-          if (guessStatus === "present") {
-            if (word[i] === guessLetter) return false // Não pode estar nesta posição
-            if (!word.includes(guessLetter)) return false // Deve estar em algum lugar
-          }
-
-          // Se a letra estiver ausente, a solução não deve conter esta letra
-          // (a menos que já esteja contabilizada em uma posição correta ou presente)
-          if (guessStatus === "absent") {
-            // Conta quantas vezes esta letra aparece como correta ou presente no palpite
-            const correctOrPresentCount = guess.word.split("").reduce((count, letter, idx) => {
-              if (letter === guessLetter && (guess.statuses[idx] === "correct" || guess.statuses[idx] === "present")) {
-                return count + 1
-              }
-              return count
-            }, 0)
-
-            // Conta quantas vezes esta letra aparece na palavra candidata
-            const letterCount = word.split("").filter((letter) => letter === guessLetter).length
-
-            // Se a letra aparecer mais vezes no candidato do que o contabilizado, é inválido
-            if (letterCount > correctOrPresentCount) return false
-          }
+    return wordList.filter((word) => {
+      // Performs simple checks
+      for (let i = 0; i < 5; i++) {
+        const status = guess.statuses[i];
+        const guessLetter = guess.word[i];
+        const wordHasGuessLetter = word.includes(guessLetter);
+        
+        if (status === "absent" && word[i] === guessLetter) {
+          return false;
         }
+        if (status === "correct" && word[i] !== guessLetter) {
+          return false;
+        }
+        if (status === "existSomewhereElse" && (word[i] === guessLetter || !wordHasGuessLetter)) {
+          return false;
+        }
+        if (status === "trueAbsent" && wordHasGuessLetter) {
+          return false;
+        }
+      }
+      // Check for excessive letters
+      const guessPresentCounts: Record<string, number> = {}
+      const wordPresentCounts: Record<string, number> = {}
+      for (let i = 0; i < 5; i++) {
+        const letter = guess.word[i];
+        if (guess.statuses[i] === "existSomewhereElse" || guess.statuses[i] === "correct") {
+          guessPresentCounts[letter] = (guessPresentCounts[letter] || 0) + 1;
+        }
+        if (word.includes(letter)) {
+          wordPresentCounts[letter] = (wordPresentCounts[letter] || 0) + 1;
+        }
+      }
+      for (const letter in guessPresentCounts) {
+        if ((wordPresentCounts[letter] || 0) < guessPresentCounts[letter]) {
+          return false;
+        }
+      }
 
-        return true
-      })
-    })
+      return true
+    });
   }
 
-  // Obtém a cor de fundo para uma letra com base em seu status
   const getLetterColor = (status: LetterStatus) => {
     switch (status) {
       case "correct":
         return "bg-green-500 text-white"
-      case "present":
+      case "existSomewhereElse":
         return "bg-yellow-500 text-white"
       case "absent":
         return "bg-gray-500 text-white"
       default:
-        return "bg-gray-200"
+        return "bg-gray-500 text-white"
     }
   }
 
@@ -157,7 +160,6 @@ export default function TermoBot() {
       <h1 className="text-3xl font-bold text-center mb-8">TERMOBOT</h1>
 
       <div className="grid gap-8">
-        {/* Entrada for novo palpite */}
         <Card>
           <CardHeader>
             <CardTitle>Adicionar Palpite</CardTitle>
@@ -180,18 +182,26 @@ export default function TermoBot() {
               {currentGuess.length === 5 && (
                 <div className="space-y-2">
                   <Label>Clique em cada letra para alterar seu status</Label>
-                    <div className="flex justify-center gap-2">
-                    {currentGuess.split("").map((letter, index) => (
-                      <Button
-                      key={index}
-                      type="button" 
-                      className={`w-12 h-12 text-xl font-bold uppercase ${getLetterColor(selectedStatuses[index])} hover:${getLetterColor(selectedStatuses[index])}`}
-                      onClick={() => toggleLetterStatus(index)}
-                      >
-                      {letter}
-                      </Button>
-                    ))}
-                    </div>
+                  <div className="flex justify-center gap-2">
+                    {currentGuess.split("").map((letter, index) => {
+                      // Try to find accented version of the guess
+                      const normalizedGuess = currentGuess.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                      const accentedWord = wordMapping[normalizedGuess];
+                      // Use accented letter if available, otherwise use the original
+                      const displayLetter = accentedWord && index < accentedWord.length ? accentedWord[index] : letter;
+                      
+                      return (
+                        <Button
+                          key={index}
+                          type="button" 
+                          className={`w-12 h-12 text-xl font-bold uppercase ${getLetterColor(selectedStatuses[index])} hover:${getLetterColor(selectedStatuses[index])}`}
+                          onClick={() => toggleLetterStatus(index)}
+                        >
+                          {displayLetter}
+                        </Button>
+                      );
+                    })}
+                  </div>
                   <div className="flex justify-center gap-4 mt-4 text-sm">
                     <div className="flex items-center gap-1">
                       <div className="w-4 h-4 bg-green-500 rounded-full"></div>
@@ -205,10 +215,6 @@ export default function TermoBot() {
                       <div className="w-4 h-4 bg-gray-500 rounded-full"></div>
                       <span>Ausente</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-4 h-4 bg-gray-200 rounded-full"></div>
-                      <span>Desconhecido</span>
-                    </div>
                   </div>
                 </div>
               )}
@@ -220,7 +226,6 @@ export default function TermoBot() {
           </CardContent>
         </Card>
 
-        {/* Palpites anteriores */}
         {guesses.length > 0 && (
           <Card>
             <CardHeader>
@@ -231,14 +236,20 @@ export default function TermoBot() {
                 {guesses.map((guess, guessIndex) => (
                   <div key={guessIndex} className="flex items-center gap-2">
                     <div className="flex gap-1">
-                      {guess.word.split("").map((letter, letterIndex) => (
-                        <div
-                          key={letterIndex}
-                          className={`w-10 h-10 flex items-center justify-center text-lg font-bold uppercase ${getLetterColor(guess.statuses[letterIndex])}`}
-                        >
-                          {letter}
-                        </div>
-                      ))}
+                      {guess.word.split("").map((letter, letterIndex) => {
+                        // Find the accented version of the letter if it exists
+                        const currentWord = wordMapping[guess.word] || guess.word;
+                        const displayLetter = currentWord[letterIndex] || letter;
+                        
+                        return (
+                          <div
+                            key={letterIndex}
+                            className={`w-10 h-10 flex items-center justify-center text-lg font-bold uppercase ${getLetterColor(guess.statuses[letterIndex])}`}
+                          >
+                            {displayLetter}
+                          </div>
+                        );
+                      })}
                     </div>
                     <Button variant="ghost" size="sm" onClick={() => removeGuess(guessIndex)} className="ml-2">
                       Remover
@@ -250,7 +261,6 @@ export default function TermoBot() {
           </Card>
         )}
 
-        {/* Soluções possíveis - Only show after first guess */}
         {guesses.length > 0 && (
           <Card>
             <CardHeader>
@@ -266,9 +276,9 @@ export default function TermoBot() {
             <CardContent>
               <div className="max-h-60 overflow-y-auto">
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                  {possibleSolutions.slice(0, 100).map((word, index) => (
+                  {possibleSolutions.slice(0, 100).map((normalizedWord, index) => (
                     <div key={index} className="bg-gray-100 dark:bg-gray-700 p-2 text-center rounded uppercase text-black dark:text-white">
-                      {word}
+                      {wordMapping[normalizedWord] || normalizedWord}
                     </div>
                   ))}
                   {possibleSolutions.length > 100 && (
