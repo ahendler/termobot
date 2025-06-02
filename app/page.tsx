@@ -63,20 +63,39 @@ export default function TermoBot() {
         }
       }
       // Check for excessive letters
-      const guessPresentCounts: Record<string, number> = {}
-      const wordPresentCounts: Record<string, number> = {}
-      for (let i = 0; i < 5; i++) {
-        const letter = guess.word[i];
-        if (guess.statuses[i] === "existSomewhereElse" || guess.statuses[i] === "correct") {
-          guessPresentCounts[letter] = (guessPresentCounts[letter] || 0) + 1;
+      const guessLetterPresentCounts = guess.word.split("").reduce((acc, letter, index) => {
+        const status = guess.statuses[index];
+        if (status === "correct" || status === "existSomewhereElse") {
+          acc[letter] = (acc[letter] || 0) + 1;
         }
-        if (word.includes(letter)) {
-          wordPresentCounts[letter] = (wordPresentCounts[letter] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      const guessLetterCounts = guess.word.split("").reduce((acc, letter) => {
+        acc[letter] = (acc[letter] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      const wordLetterCounts = word.split("").reduce((acc, letter) => {
+        acc[letter] = (acc[letter] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      // Check if the word has enough letters to match the guess
+      for (const letter in guessLetterPresentCounts) {
+        if ((wordLetterCounts[letter] || 0) < guessLetterPresentCounts[letter]) {
+          return false;
         }
       }
-      for (const letter in guessPresentCounts) {
-        if ((wordPresentCounts[letter] || 0) < guessPresentCounts[letter]) {
-          return false;
+
+      // console.log("Word:", word, "Guess:", guess.word)
+      // console.log("Guess Letter Present Counts:", guessLetterPresentCounts);
+      // console.log("Guess Letter Counts:", guessLetterCounts);
+      // console.log("Word Letter Counts:", wordLetterCounts);
+      // Check if word has more letters than the guess can handle
+      for (const letter in guessLetterPresentCounts) {
+        if (guessLetterPresentCounts[letter] < guessLetterCounts[letter]) {
+          if ((wordLetterCounts[letter] || 0) > guessLetterPresentCounts[letter]) {
+            return false;
+          }
         }
       }
 
