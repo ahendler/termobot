@@ -87,10 +87,10 @@ export default function TermoBot() {
         }
       }
 
-      // console.log("Word:", word, "Guess:", guess.word)
-      // console.log("Guess Letter Present Counts:", guessLetterPresentCounts);
-      // console.log("Guess Letter Counts:", guessLetterCounts);
-      // console.log("Word Letter Counts:", wordLetterCounts);
+      
+      
+      
+      
       // Check if word has more letters than the guess can handle
       for (const letter in guessLetterPresentCounts) {
         if (guessLetterPresentCounts[letter] < guessLetterCounts[letter]) {
