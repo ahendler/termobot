@@ -33,6 +33,35 @@ export default function TermoBot() {
   const [possibleSolutions, setPossibleSolutions] = useState<string[]>(normalizedWords)
   const [selectedStatuses, setSelectedStatuses] = useState<LetterStatus[]>(Array(5).fill("absent"))
 
+  // Utility function to pre-fill statuses based on previous guesses
+  const getPrefilledStatuses = (normalizedGuess: string) => {
+    const newSelectedStatuses = Array(5).fill("absent");
+    
+    for (let i = 0; i < 5; i++) {
+      const currentLetter = normalizedGuess[i];
+      
+      // Check if this letter at this position was marked as "correct" in any previous guess
+      const correctAtSamePosition = guesses.some(guess => 
+        guess.word[i] === currentLetter && guess.statuses[i] === "correct"
+      );
+      
+      if (correctAtSamePosition) {
+        newSelectedStatuses[i] = "correct";
+        continue;
+      }
+      
+      // Check if this letter was marked as "existSomewhereElse" in any previous guess
+      const existsSomewhereElse = guesses.some(guess =>
+        guess.word[i] === currentLetter && guess.statuses[i] === "existSomewhereElse"
+      );
+      if (existsSomewhereElse) {
+        newSelectedStatuses[i] = "existSomewhereElse";
+      }
+    }
+    
+    return newSelectedStatuses;
+  };
+
   const handleGuessChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toLowerCase()
     if (/^[a-záàâãéèêíïóôõöúçñ]*$/i.test(value) && value.length <= 5) {
@@ -40,36 +69,12 @@ export default function TermoBot() {
 
       if (value.length !== currentGuess.length) {
         // When the length changes, update the selected statuses based on previous guesses
-        const newSelectedStatuses = Array(5).fill("absent");
-        
         if (value.length === 5) {
           const normalizedNewGuess = value.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-          
-          // Pre-fill based on previous guesses
-          for (let i = 0; i < 5; i++) {
-            const currentLetter = normalizedNewGuess[i];
-            
-            // Check if this letter at this position was marked as "correct" in any previous guess
-            const correctAtSamePosition = guesses.some(guess => 
-              guess.word[i] === currentLetter && guess.statuses[i] === "correct"
-            );
-            
-            if (correctAtSamePosition) {
-              newSelectedStatuses[i] = "correct";
-              continue;
-            }
-            
-            // Check if this letter was marked as "existSomewhereElse" in any previous guess
-            const existsSomewhereElse = guesses.some(guess =>
-              guess.word[i] === currentLetter && guess.statuses[i] === "existSomewhereElse"
-            );
-            if (existsSomewhereElse) {
-              newSelectedStatuses[i] = "existSomewhereElse";
-            }
-          }
+          setSelectedStatuses(getPrefilledStatuses(normalizedNewGuess));
+        } else {
+          setSelectedStatuses(Array(5).fill("absent"));
         }
-        
-        setSelectedStatuses(newSelectedStatuses);
       }
     }
   }
@@ -183,6 +188,15 @@ export default function TermoBot() {
       default:
         return "bg-gray-500 text-white"
     }
+  }
+
+  const selectWord = (normalizedWord: string) => {
+    // Get the accented version if available
+    const wordToUse = wordMapping[normalizedWord] || normalizedWord;
+    setCurrentGuess(wordToUse);
+    
+    // Pre-fill statuses based on previous guesses
+    setSelectedStatuses(getPrefilledStatuses(normalizedWord));
   }
 
   return (
@@ -300,14 +314,18 @@ export default function TermoBot() {
                   ? "Nenhuma solução encontrada. Tente remover ou ajustar seus palpites."
                   : possibleSolutions.length > 100
                     ? "Adicione mais palpites para reduzir as soluções."
-                    : "Aqui estão as soluções possíveis com base nos seus palpites."}
+                    : "Clique em uma palavra para usá-la como próximo palpite."}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="max-h-60 overflow-y-auto">
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                   {possibleSolutions.slice(0, 100).map((normalizedWord, index) => (
-                    <div key={index} className="bg-gray-100 dark:bg-gray-700 p-2 text-center rounded uppercase text-black dark:text-white">
+                    <div 
+                      key={index} 
+                      className="bg-gray-100 dark:bg-gray-700 p-2 text-center rounded uppercase text-black dark:text-white cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                      onClick={() => selectWord(normalizedWord)}
+                    >
                       {wordMapping[normalizedWord] || normalizedWord}
                     </div>
                   ))}
