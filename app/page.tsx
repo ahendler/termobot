@@ -87,10 +87,6 @@ export default function TermoBot() {
         }
       }
 
-      
-      
-      
-      
       // Check if word has more letters than the guess can handle
       for (const letter in guessLetterPresentCounts) {
         if (guessLetterPresentCounts[letter] < guessLetterCounts[letter]) {
