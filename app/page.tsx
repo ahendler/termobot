@@ -39,7 +39,37 @@ export default function TermoBot() {
       setCurrentGuess(value)
 
       if (value.length !== currentGuess.length) {
-        setSelectedStatuses(Array(5).fill("absent"))
+        // When the length changes, update the selected statuses based on previous guesses
+        const newSelectedStatuses = Array(5).fill("absent");
+        
+        if (value.length === 5) {
+          const normalizedNewGuess = value.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          
+          // Pre-fill based on previous guesses
+          for (let i = 0; i < 5; i++) {
+            const currentLetter = normalizedNewGuess[i];
+            
+            // Check if this letter at this position was marked as "correct" in any previous guess
+            const correctAtSamePosition = guesses.some(guess => 
+              guess.word[i] === currentLetter && guess.statuses[i] === "correct"
+            );
+            
+            if (correctAtSamePosition) {
+              newSelectedStatuses[i] = "correct";
+              continue;
+            }
+            
+            // Check if this letter was marked as "existSomewhereElse" in any previous guess
+            const existsSomewhereElse = guesses.some(guess =>
+              guess.word[i] === currentLetter && guess.statuses[i] === "existSomewhereElse"
+            );
+            if (existsSomewhereElse) {
+              newSelectedStatuses[i] = "existSomewhereElse";
+            }
+          }
+        }
+        
+        setSelectedStatuses(newSelectedStatuses);
       }
     }
   }
