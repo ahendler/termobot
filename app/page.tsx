@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { answers, remaining } from "@/lib/words"
+import { answers, guessable } from "@/lib/words"
 import { 
   Popover,
   PopoverContent,
@@ -19,7 +19,7 @@ import { Switch } from "@/components/ui/switch"
 type LetterStatus = "correct" | "existSomewhereElse" | "absent" | "trueAbsent"
 
 export default function TermoBot() {
-  const allWords = useMemo(() => [...answers, ...remaining], []);
+  const allWords = useMemo(() => [...answers, ...guessable], []);
   const [useAllWords, setUseAllWords] = useState<boolean>(false);
   
   const wordMapping = useMemo(() => {
@@ -253,7 +253,12 @@ export default function TermoBot() {
 
   return (
     <div className="container max-w-3xl mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold text-center mb-8">TERMOBOT</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold">TERMOBOT</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-2 sm:mt-0 text-sm sm:text-base">
+          Buscador de palavras para o jogo <a href="https://term.ooo" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Termo</a>
+        </p>
+      </div>
 
       <div className="grid gap-8">
         {!isSolved && !isFailed && (
