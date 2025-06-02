@@ -3,12 +3,13 @@
 import type React from "react"
 
 import { useState, useMemo } from "react"
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { answers, guessable } from "@/lib/words"
-import { 
+import {
   Popover,
   PopoverContent,
   PopoverTrigger
@@ -21,7 +22,7 @@ type LetterStatus = "correct" | "existSomewhereElse" | "absent" | "trueAbsent"
 export default function TermoBot() {
   const allWords = useMemo(() => [...answers, ...guessable], []);
   const [useAllWords, setUseAllWords] = useState<boolean>(false);
-  
+
   const wordMapping = useMemo(() => {
     const mapping: Record<string, string> = {};
     const wordList = useAllWords ? allWords : answers;
@@ -35,7 +36,7 @@ export default function TermoBot() {
   const normalizedWords = useMemo(() => {
     return Object.keys(wordMapping);
   }, [wordMapping]);
-  
+
   const [currentGuess, setCurrentGuess] = useState<string>("")
   const [guesses, setGuesses] = useState<Array<{ word: string; statuses: LetterStatus[] }>>([])
   const [possibleSolutions, setPossibleSolutions] = useState<string[]>(normalizedWords)
@@ -48,7 +49,7 @@ export default function TermoBot() {
         const status = guess.statuses[i];
         const guessLetter = guess.word[i];
         const wordHasGuessLetter = word.includes(guessLetter);
-        
+
         if (status === "absent" && word[i] === guessLetter) {
           return false;
         }
@@ -104,7 +105,7 @@ export default function TermoBot() {
   }
 
   // Update possible solutions when word list changes
-  useMemo(() => {
+  useEffect(() => {
     if (guesses.length === 0) {
       setPossibleSolutions(normalizedWords);
     } else {
@@ -115,7 +116,7 @@ export default function TermoBot() {
       setPossibleSolutions(filtered);
     }
   }, [normalizedWords, guesses]);  // Added guesses as a dependency
-  
+
   // Toggle between using all words and just answers
   const toggleWordList = () => {
     setUseAllWords(!useAllWords);
@@ -124,14 +125,14 @@ export default function TermoBot() {
 
   const getPrefilledStatuses = (normalizedGuess: string) => {
     const newSelectedStatuses = Array(5).fill("absent");
-    
+
     for (let i = 0; i < 5; i++) {
       const currentLetter = normalizedGuess[i];
-      
-      const correctAtSamePosition = guesses.some(guess => 
+
+      const correctAtSamePosition = guesses.some(guess =>
         guess.word[i] === currentLetter && guess.statuses[i] === "correct"
       );
-      
+
       if (correctAtSamePosition) {
         newSelectedStatuses[i] = "correct";
         continue;
@@ -144,7 +145,7 @@ export default function TermoBot() {
         newSelectedStatuses[i] = "existSomewhereElse";
       }
     }
-    
+
     return newSelectedStatuses;
   };
 
@@ -200,7 +201,7 @@ export default function TermoBot() {
     }
     const updatedGuesses = [...guesses, newGuess]
     setGuesses(updatedGuesses)
-    
+
     const filtered = filterByGuess(possibleSolutions, newGuess)
     setPossibleSolutions(filtered)
 
@@ -236,7 +237,7 @@ export default function TermoBot() {
     // Get the accented version if available
     const wordToUse = wordMapping[normalizedWord] || normalizedWord;
     setCurrentGuess(wordToUse);
-    
+
     // Pre-fill statuses based on previous guesses
     setSelectedStatuses(getPrefilledStatuses(normalizedWord));
   }
@@ -291,11 +292,11 @@ export default function TermoBot() {
                         const accentedWord = wordMapping[normalizedGuess];
                         // Use accented letter if available, otherwise use the original
                         const displayLetter = accentedWord && index < accentedWord.length ? accentedWord[index] : letter;
-                        
+
                         return (
                           <Button
                             key={index}
-                            type="button" 
+                            type="button"
                             className={`w-12 h-12 text-xl font-bold uppercase ${getLetterColor(selectedStatuses[index])} hover:${getLetterColor(selectedStatuses[index])}`}
                             onClick={() => toggleLetterStatus(index)}
                           >
@@ -387,7 +388,7 @@ export default function TermoBot() {
                         // Find the accented version of the letter if it exists
                         const currentWord = wordMapping[guess.word] || guess.word;
                         const displayLetter = currentWord[letterIndex] || letter;
-                        
+
                         return (
                           <div
                             key={letterIndex}
@@ -415,7 +416,7 @@ export default function TermoBot() {
                 Soluções Possíveis ({possibleSolutions.length})
                 <Popover>
                   <PopoverTrigger asChild>
-                    <button 
+                    <button
                       className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                       type="button"
                       aria-label="Informações sobre soluções possíveis"
@@ -426,21 +427,21 @@ export default function TermoBot() {
                   <PopoverContent className="max-w-xs p-3">
                     <div className="space-y-4">
                       <p>O jogo term.ooo não considera todas as palavras de cinco letras do português como soluções possíveis. O conjunto de palavras aceitas é maior do que o conjunto de palavras que podem ser soluções.</p>
-                      
+
                       <div className="flex items-center justify-between">
                         <Label htmlFor="word-mode" className="text-sm">
                           {useAllWords ? "Usando todas as palavras" : "Usando apenas possíveis respostas"}
                         </Label>
-                        <Switch 
-                          id="word-mode" 
-                          checked={useAllWords} 
-                          onCheckedChange={toggleWordList} 
+                        <Switch
+                          id="word-mode"
+                          checked={useAllWords}
+                          onCheckedChange={toggleWordList}
                         />
                       </div>
-                      
+
                       <p className="text-xs text-gray-500">
-                        {useAllWords 
-                          ? "Incluindo palavras que são aceitas como palpites, mas não podem ser a solução." 
+                        {useAllWords
+                          ? "Incluindo palavras que são aceitas como palpites, mas não podem ser a solução."
                           : "Mostrando apenas palavras que podem ser a solução do dia."}
                       </p>
                     </div>
@@ -461,12 +462,12 @@ export default function TermoBot() {
               <div className="max-h-60 overflow-y-auto">
                 <div className={`grid ${possibleSolutions.length === 1 ? 'place-items-center' : 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5'} gap-2`}>
                   {possibleSolutions.slice(0, 100).map((normalizedWord, index) => (
-                    <div 
-                      key={index} 
-                      className={`${possibleSolutions.length === 1 
+                    <div
+                      key={index}
+                      className={`${possibleSolutions.length === 1
                         ? 'bg-green-100 dark:bg-green-900 p-4 text-green-700 dark:text-green-300 text-2xl font-bold'
                         : 'bg-gray-100 dark:bg-gray-700 p-2 text-black dark:text-white'
-                      } text-center rounded uppercase cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors`}
+                        } text-center rounded uppercase cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors`}
                       onClick={() => !isSolved && selectWord(normalizedWord)}
                     >
                       {wordMapping[normalizedWord] || normalizedWord}
