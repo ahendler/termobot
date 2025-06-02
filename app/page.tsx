@@ -10,13 +10,13 @@ import { Label } from "@/components/ui/label"
 import { portugueseWords } from "@/lib/words"
 
 
-type LetterStatus = "correct" | "hasSomewhereElse" | "absent" | "unknown" | "trueAbsent"
+type LetterStatus = "correct" | "existSomewhereElse" | "absent" | "trueAbsent"
 
 export default function TermoBot() {
   const [currentGuess, setCurrentGuess] = useState<string>("")
   const [guesses, setGuesses] = useState<Array<{ word: string; statuses: LetterStatus[] }>>([])
   const [possibleSolutions, setPossibleSolutions] = useState<string[]>(portugueseWords)
-  const [selectedStatuses, setSelectedStatuses] = useState<LetterStatus[]>(Array(5).fill("unknown"))
+  const [selectedStatuses, setSelectedStatuses] = useState<LetterStatus[]>(Array(5).fill("absent"))
 
   const handleGuessChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toLowerCase()
@@ -24,13 +24,13 @@ export default function TermoBot() {
       setCurrentGuess(value)
 
       if (value.length !== currentGuess.length) {
-        setSelectedStatuses(Array(5).fill("unknown"))
+        setSelectedStatuses(Array(5).fill("absent"))
       }
     }
   }
 
   const toggleLetterStatus = (index: number) => {
-    const statuses: LetterStatus[] = ["unknown", "correct", "hasSomewhereElse", "absent"]
+    const statuses: LetterStatus[] = ["absent", "correct", "existSomewhereElse"]
     const currentStatus = selectedStatuses[index]
     const currentIndex = statuses.indexOf(currentStatus)
     const nextIndex = (currentIndex + 1) % statuses.length
@@ -69,7 +69,7 @@ export default function TermoBot() {
     setPossibleSolutions(filtered)
 
     setCurrentGuess("")
-    setSelectedStatuses(Array(5).fill("unknown"))
+    setSelectedStatuses(Array(5).fill("absent"))
   }
 
   const removeGuess = (index: number) => {
@@ -92,18 +92,16 @@ export default function TermoBot() {
         const guessLetter = guess.word[i];
         const wordHasGuessLetter = word.includes(guessLetter);
         
-        if (status === "unknown") continue;
-        
+        if (status === "absent" && word[i] === guessLetter) {
+          return false;
+        }
         if (status === "correct" && word[i] !== guessLetter) {
           return false;
         }
-        if (status === "hasSomewhereElse" && (word[i] === guessLetter || !wordHasGuessLetter)) {
+        if (status === "existSomewhereElse" && (word[i] === guessLetter || !wordHasGuessLetter)) {
           return false;
         }
         if (status === "trueAbsent" && wordHasGuessLetter) {
-          return false;
-        }
-        if (status === "absent" && word[i] === guessLetter) {
           return false;
         }
       }
@@ -112,7 +110,7 @@ export default function TermoBot() {
       const wordPresentCounts: Record<string, number> = {}
       for (let i = 0; i < 5; i++) {
         const letter = guess.word[i];
-        if (guess.statuses[i] === "hasSomewhereElse" || guess.statuses[i] === "correct") {
+        if (guess.statuses[i] === "existSomewhereElse" || guess.statuses[i] === "correct") {
           guessPresentCounts[letter] = (guessPresentCounts[letter] || 0) + 1;
         }
         if (word.includes(letter)) {
@@ -133,12 +131,12 @@ export default function TermoBot() {
     switch (status) {
       case "correct":
         return "bg-green-500 text-white"
-      case "hasSomewhereElse":
+      case "existSomewhereElse":
         return "bg-yellow-500 text-white"
       case "absent":
         return "bg-gray-500 text-white"
       default:
-        return "bg-gray-200"
+        return "bg-gray-500 text-white"
     }
   }
 
@@ -193,10 +191,6 @@ export default function TermoBot() {
                     <div className="flex items-center gap-1">
                       <div className="w-4 h-4 bg-gray-500 rounded-full"></div>
                       <span>Ausente</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-4 h-4 bg-gray-200 rounded-full"></div>
-                      <span>Desconhecido</span>
                     </div>
                   </div>
                 </div>
