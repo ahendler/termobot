@@ -249,22 +249,22 @@ export default function TermoBot() {
   }, [possibleSolutions, guesses]);
 
   return (
-    <div className="container max-w-3xl mx-auto py-8 px-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">TERMOBOT</h1>
+    <div className="container max-w-3xl mx-auto py-6 px-3 sm:py-8 sm:px-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold">TERMOBOT</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-2 sm:mt-0 text-sm sm:text-base">
           Buscador de palavras para o jogo <a href="https://term.ooo" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Termo</a>
         </p>
       </div>
 
-      <div className="grid gap-8">
+      <div className="grid gap-6 sm:gap-8">
         {!isSolved && !isFailed && (
           <Card>
-            <CardHeader>
+            <CardHeader className="px-4 sm:px-6">
               <CardTitle>Adicionar Palpite</CardTitle>
               <CardDescription>Digite seu palpite de 5 letras e marque o feedback que você recebeu</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-4 sm:px-6">
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="guess">Seu Palpite (5 letras)</Label>
@@ -281,7 +281,7 @@ export default function TermoBot() {
                 {currentGuess.length === 5 && (
                   <div className="space-y-2">
                     <Label>Clique em cada letra para alterar seu status</Label>
-                    <div className="flex justify-center gap-2">
+                    <div className="flex justify-center gap-1 sm:gap-2">
                       {currentGuess.split("").map((letter, index) => {
                         // Try to find accented version of the guess
                         const normalizedGuess = currentGuess.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -293,7 +293,7 @@ export default function TermoBot() {
                           <Button
                             key={index}
                             type="button"
-                            className={`w-12 h-12 text-xl font-bold uppercase ${getLetterColor(selectedStatuses[index])} hover:${getLetterColor(selectedStatuses[index])}`}
+                            className={`w-10 h-10 sm:w-12 sm:h-12 text-lg sm:text-xl font-bold uppercase ${getLetterColor(selectedStatuses[index])} hover:${getLetterColor(selectedStatuses[index])}`}
                             onClick={() => toggleLetterStatus(index)}
                           >
                             {displayLetter}
@@ -301,17 +301,17 @@ export default function TermoBot() {
                         );
                       })}
                     </div>
-                    <div className="flex justify-center gap-4 mt-4 text-sm">
+                    <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mt-4 text-xs sm:text-sm">
                       <div className="flex items-center gap-1">
-                        <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                        <div className="w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full"></div>
                         <span>Correto</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
+                        <div className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-500 rounded-full"></div>
                         <span>Presente</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <div className="w-4 h-4 bg-gray-500 rounded-full"></div>
+                        <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-500 rounded-full"></div>
                         <span>Ausente</span>
                       </div>
                     </div>
@@ -328,14 +328,14 @@ export default function TermoBot() {
 
         {isSolved && (
           <Card className="border-green-500 overflow-hidden">
-            <CardHeader className="bg-green-50 dark:bg-green-950">
+            <CardHeader className="bg-green-50 dark:bg-green-950 px-4 sm:px-6">
               <CardTitle className="text-green-700 dark:text-green-300">Última palavra restante</CardTitle>
               <CardDescription>Baseado nos seus palpites, só há uma possibilidade</CardDescription>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="pt-6 px-4 sm:px-6">
               <div className="flex flex-col items-center justify-center">
                 <div className="bg-green-100 dark:bg-green-900 p-4 rounded-lg mb-4">
-                  <span className="text-3xl font-bold uppercase text-green-700 dark:text-green-300">
+                  <span className="text-2xl sm:text-3xl font-bold uppercase text-green-700 dark:text-green-300">
                     {wordMapping[possibleSolutions[0]] || possibleSolutions[0]}
                   </span>
                 </div>
@@ -352,11 +352,11 @@ export default function TermoBot() {
 
         {isFailed && (
           <Card className="border-red-500 overflow-hidden">
-            <CardHeader className="bg-red-50 dark:bg-red-950">
+            <CardHeader className="bg-red-50 dark:bg-red-950 px-4 sm:px-6">
               <CardTitle className="text-red-700 dark:text-red-300">Acabaram as Palavras</CardTitle>
               <CardDescription>Não foi possível encontrar uma palavra que corresponda a todas as dicas.</CardDescription>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="pt-6 px-4 sm:px-6">
               <div className="flex flex-col items-center justify-center">
                 <p className="text-center mb-4">Verifique se não houve algum erro ao marcar as letras.</p>
                 <Button onClick={() => {
@@ -372,13 +372,13 @@ export default function TermoBot() {
 
         {guesses.length > 0 && (
           <Card>
-            <CardHeader>
+            <CardHeader className="px-4 sm:px-6">
               <CardTitle>Seus Palpites</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
+            <CardContent className="px-4 sm:px-6">
+              <div className="space-y-2 overflow-x-auto pb-2">
                 {guesses.map((guess, guessIndex) => (
-                  <div key={guessIndex} className="flex items-center gap-2">
+                  <div key={guessIndex} className="flex items-center gap-2 min-w-max">
                     <div className="flex gap-1">
                       {guess.word.split("").map((letter, letterIndex) => {
                         // Find the accented version of the letter if it exists
@@ -388,14 +388,14 @@ export default function TermoBot() {
                         return (
                           <div
                             key={letterIndex}
-                            className={`w-10 h-10 flex items-center justify-center text-lg font-bold uppercase ${getLetterColor(guess.statuses[letterIndex])}`}
+                            className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-sm sm:text-lg font-bold uppercase ${getLetterColor(guess.statuses[letterIndex])}`}
                           >
                             {displayLetter}
                           </div>
                         );
                       })}
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => removeGuess(guessIndex)} className="ml-2">
+                    <Button variant="ghost" size="sm" onClick={() => removeGuess(guessIndex)} className="ml-1 sm:ml-2">
                       Remover
                     </Button>
                   </div>
@@ -407,7 +407,7 @@ export default function TermoBot() {
 
         {guesses.length > 0 && (
           <Card>
-            <CardHeader>
+            <CardHeader className="px-4 sm:px-6">
               <CardTitle className="flex items-center gap-2">
                 Soluções Possíveis ({possibleSolutions.length})
                 <Popover>
@@ -454,23 +454,23 @@ export default function TermoBot() {
                       : "Clique em uma palavra para usá-la como próximo palpite."}
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-4 sm:px-6">
               <div className="max-h-60 overflow-y-auto">
-                <div className={`grid ${possibleSolutions.length === 1 ? 'place-items-center' : 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5'} gap-2`}>
+                <div className={`grid ${possibleSolutions.length === 1 ? 'place-items-center' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5'} gap-2`}>
                   {possibleSolutions.slice(0, 100).map((normalizedWord, index) => (
                     <div
                       key={index}
                       className={`${possibleSolutions.length === 1
                         ? 'bg-green-100 dark:bg-green-900 p-4 text-green-700 dark:text-green-300 text-2xl font-bold'
-                        : 'bg-gray-100 dark:bg-gray-700 p-2 text-black dark:text-white'
-                        } text-center rounded uppercase cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors`}
+                        : 'bg-gray-100 dark:bg-gray-700 p-2 text-black dark:text-white text-xs sm:text-sm'
+                        } text-center rounded uppercase cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors overflow-hidden text-ellipsis`}
                       onClick={() => !isSolved && selectWord(normalizedWord)}
                     >
                       {wordMapping[normalizedWord] || normalizedWord}
                     </div>
                   ))}
                   {possibleSolutions.length > 100 && (
-                    <div className="col-span-full text-center text-gray-500 mt-2">
+                    <div className="col-span-full text-center text-gray-500 mt-2 text-sm">
                       ...e mais {possibleSolutions.length - 100}
                     </div>
                   )}
