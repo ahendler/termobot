@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 export default function TermoBot() {
   const [activeTab, setActiveTab] = React.useState<string>("helper");
   const gameRef = useRef<HTMLDivElement>(null);
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
   
   const {
     currentGuess,
@@ -55,8 +56,20 @@ export default function TermoBot() {
     // Focus the game div when the game tab is active
     if (activeTab === "game" && gameRef.current) {
       gameRef.current.focus();
+      
+      // Also focus the hidden input on mobile
+      if (hiddenInputRef.current) {
+        hiddenInputRef.current.focus();
+      }
     }
   }, [activeTab, setIsActive]);
+
+  // Function to focus the hidden input for mobile keyboards
+  const focusHiddenInput = () => {
+    if (hiddenInputRef.current && activeTab === "game") {
+      hiddenInputRef.current.focus();
+    }
+  };
 
   const maxAttempts = 6;
 
@@ -154,14 +167,27 @@ export default function TermoBot() {
             tabIndex={0} 
             className="outline-none"
             aria-label="Termo game board"
+            onClick={focusHiddenInput}
           >
+            {/* Hidden input to trigger mobile keyboard */}
+            <input
+              ref={hiddenInputRef}
+              type="text"
+              className="opacity-0 h-0 w-0 absolute -z-10"
+              aria-hidden="true"
+              autoComplete="off"
+              value={termoCurrentGuess}
+              readOnly
+            />
+            
             <Card className="border rounded-lg">
-              <CardHeader className="px-4 sm:px-6">
-                <CardTitle className="text-xl font-semibold text-center">Termo Game</CardTitle>
-              </CardHeader>
+              <div className="flex flex-col space-y-1.5 p-3 px-2 sm:px-2"></div>
               <CardContent className="px-4 sm:px-6">
                 {/* Game board - now fills from top to bottom */}
-                <div className="grid grid-cols-5 gap-2 max-w-xs mx-auto mb-6">
+                <div 
+                  className="grid grid-cols-5 gap-2 max-w-xs mx-auto mb-6"
+                  onClick={focusHiddenInput}
+                >
                   {gameRows.map((row, rowIndex) => (
                     <React.Fragment key={`row-${rowIndex}`}>
                       {Array(5).fill(0).map((_, col) => {
@@ -237,10 +263,10 @@ export default function TermoBot() {
                     <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-500 rounded-full"></div>
                     <span className="text-xs sm:text-sm">Letra ausente</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-full"></div>
+                    <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 sm:w-4 sm:h-4 bg-black-500 border-2 border-red-500 rounded-full"></div>
                     <span className="text-xs sm:text-sm">Palavra não aceita</span>
-                  </div>
+                    </div>
                 </div>
                 
                 <div className="text-center mt-4 text-sm text-gray-500 dark:text-gray-400">
