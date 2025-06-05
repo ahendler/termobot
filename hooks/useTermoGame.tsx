@@ -26,10 +26,9 @@ export function useTermoGame() {
     // Handle keyboard input - only when the game is active
     useEffect(() => {
         if (!isActive) return;
+        if (gameCompleted || gameLost) return;
 
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (gameCompleted || gameLost) return;
-            
             // Allow only alphabet keys for letter input
             if (e.key.match(/^[a-zA-Z]$/) && currentGuess.length < 5) {
                 setCurrentGuess(prev => prev + e.key.toLowerCase());
@@ -143,6 +142,7 @@ export function useTermoGame() {
         todaysWord,
         TermoGuesses,
         currentGuess,
+        setCurrentGuess,
         gameCompleted,
         gameLost,
         invalidGuess,
@@ -151,6 +151,7 @@ export function useTermoGame() {
         resetGame,
         getLetterColor,
         setIsActive,
-        isGuessable
+        isGuessable,
+        submitGuess
     };
 }

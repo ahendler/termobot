@@ -40,12 +40,14 @@ export default function TermoBot() {
     todaysWord,
     TermoGuesses,
     currentGuess: termoCurrentGuess,
+    setCurrentGuess: setTermoCurrentGuess,
     gameCompleted,
     gameLost,
     invalidGuess,
     resetGame: resetTermoGame,
     getLetterColor: getTermoLetterColor,
-    setIsActive
+    setIsActive,
+    submitGuess
   } = useTermoGame();
 
   // Handle tab changes to activate/deactivate game keyboard handling
@@ -82,10 +84,20 @@ export default function TermoBot() {
     }
   };
 
-  // Handle input changes (to sync with the game's current guess)
+  // Handle input changes to update the current guess
   const handleHiddenInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // The actual typing is handled by the keyboard event listeners in useTermoGame
-    // This is just to prevent the default behavior
+    const value = e.target.value;
+    // Ensure we only accept letters and limit to 5 characters
+    const filtered = value.replace(/[^a-zA-Z]/g, '').toLowerCase().slice(0, 5);
+    setTermoCurrentGuess(filtered);
+  };
+
+  // Handle key events for the hidden input
+  const handleHiddenInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && termoCurrentGuess.length === 5) {
+      e.preventDefault();
+      submitGuess();
+    }
   };
 
   const maxAttempts = 6;
@@ -195,8 +207,10 @@ export default function TermoBot() {
               autoComplete="off"
               value={termoCurrentGuess}
               onChange={handleHiddenInputChange}
+              onKeyDown={handleHiddenInputKeyDown}
               autoFocus={activeTab === "game"}
               inputMode="text"
+              maxLength={5}
             />
             
             <Card className="border rounded-lg">
