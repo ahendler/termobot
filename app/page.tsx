@@ -84,11 +84,18 @@ export default function TermoBot() {
     }
   };
 
+  // State to track the input value separately
+  const [inputValue, setInputValue] = React.useState<string>('');
+
   // Handle input changes to update the current guess
   const handleHiddenInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+    
     // Ensure we only accept letters and limit to 5 characters
     const filtered = value.replace(/[^a-zA-Z]/g, '').toLowerCase().slice(0, 5);
+    
+    // Update both the input value and the game state
+    setInputValue(filtered);
     setTermoCurrentGuess(filtered);
   };
 
@@ -97,8 +104,19 @@ export default function TermoBot() {
     if (e.key === "Enter" && termoCurrentGuess.length === 5) {
       e.preventDefault();
       submitGuess();
+      setInputValue(''); // Clear input after submission
+    } else if (e.key === "Backspace" && termoCurrentGuess.length > 0) {
+      // Handle backspace manually to ensure sync
+      const newValue = termoCurrentGuess.slice(0, -1);
+      setTermoCurrentGuess(newValue);
+      setInputValue(newValue);
     }
   };
+
+  // Update input value when termoCurrentGuess changes externally
+  useEffect(() => {
+    setInputValue(termoCurrentGuess);
+  }, [termoCurrentGuess]);
 
   const maxAttempts = 6;
 
@@ -205,7 +223,7 @@ export default function TermoBot() {
               className="opacity-0 h-0 w-0 absolute -z-10"
               aria-hidden="true"
               autoComplete="off"
-              value={termoCurrentGuess}
+              value={inputValue}
               onChange={handleHiddenInputChange}
               onKeyDown={handleHiddenInputKeyDown}
               autoFocus={activeTab === "game"}
