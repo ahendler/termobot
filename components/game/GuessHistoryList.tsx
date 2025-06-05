@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Guess, LetterStatus } from "@/hooks/useTermoGame";
+import { Guess, LetterStatus } from "@/hooks/useTermoBot";
 
 interface GuessHistoryListProps {
   guesses: Guess[];

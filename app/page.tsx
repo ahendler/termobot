@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react";
-import { useTermoGame } from "@/hooks/useTermoGame";
+import { useTermoBot } from "@/hooks/useTermoBot";
 import { AddGuessForm } from "@/components/game/AddGuessForm";
 import { GuessHistoryList } from "@/components/game/GuessHistoryList";
 import { PossibleSolutions } from "@/components/game/PossibleSolutions";
@@ -25,7 +25,7 @@ export default function TermoBot() {
     toggleWordList,
     isSolved,
     isFailed,
-  } = useTermoGame();
+  } = useTermoBot();
 
   return (
     <div className="container max-w-3xl mx-auto py-6 px-3 sm:py-8 sm:px-4">

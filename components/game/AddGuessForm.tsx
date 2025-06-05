@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LetterButton } from "./LetterButton";
-import { LetterStatus } from "@/hooks/useTermoGame";
+import { LetterStatus } from "@/hooks/useTermoBot";
 
 interface AddGuessFormProps {
   currentGuess: string;
