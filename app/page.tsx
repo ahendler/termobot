@@ -64,11 +64,28 @@ export default function TermoBot() {
     }
   }, [activeTab, setIsActive]);
 
+  // Add a separate useEffect for focusing the input when the component mounts
+  useEffect(() => {
+    // Focus the hidden input when the game tab is active
+    if (activeTab === "game" && hiddenInputRef.current) {
+      // Use a slight delay to ensure DOM is fully rendered
+      setTimeout(() => {
+        hiddenInputRef.current?.focus();
+      }, 100);
+    }
+  }, [activeTab]);
+
   // Function to focus the hidden input for mobile keyboards
   const focusHiddenInput = () => {
     if (hiddenInputRef.current && activeTab === "game") {
       hiddenInputRef.current.focus();
     }
+  };
+
+  // Handle input changes (to sync with the game's current guess)
+  const handleHiddenInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // The actual typing is handled by the keyboard event listeners in useTermoGame
+    // This is just to prevent the default behavior
   };
 
   const maxAttempts = 6;
@@ -177,7 +194,9 @@ export default function TermoBot() {
               aria-hidden="true"
               autoComplete="off"
               value={termoCurrentGuess}
-              readOnly
+              onChange={handleHiddenInputChange}
+              autoFocus={activeTab === "game"}
+              inputMode="text"
             />
             
             <Card className="border rounded-lg">
