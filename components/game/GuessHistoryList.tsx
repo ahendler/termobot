@@ -36,7 +36,7 @@ export function GuessHistoryList({
                   return (
                     <div
                       key={letterIndex}
-                      className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-sm sm:text-lg font-bold uppercase ${getLetterColor(guess.statuses[letterIndex])}`}
+                      className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-md text-sm sm:text-lg font-bold uppercase ${getLetterColor(guess.statuses[letterIndex])}`}
                     >
                       {displayLetter}
                     </div>
